@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fighting Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            overflow: hidden;
+            touch-action: none;
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        #start-button {
+            padding: 20px 40px;
+            font-size: 32px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 30px;
+        }
+        
+        #game-title {
+            color: white;
+            font-size: 48px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px red;
+        }
+        
+        #character-selection {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .character-option {
+            width: 150px;
+            height: 200px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center bottom;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .character-option.selected {
+            border-color: #f44336;
+            transform: scale(1.1);
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 56.25vw;
+            max-height: 100vh;
+            max-width: 177.78vh;
+            margin: auto;
+            background-image: url('bg.jpg');
+            background-size: cover;
+            overflow: hidden;
+            display: none;
+        }
+        
+        #player {
+            position: absolute;
+            width: 150px;
+            height: 200px;
+            bottom: 50px;
+            left: 200px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center bottom;
+            z-index: 10;
+            transition: transform 0.1s;
+        }
+        
+        #enemy {
+            position: absolute;
+            width: 150px;
+            height: 200px;
+            bottom: 50px;
+            right: 200px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center bottom;
+            z-index: 10;
+            transition: transform 0.1s;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .move-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 3px solid #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        #punch-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: rgba(255, 50, 50, 0.7);
+            border: 3px solid #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            user-select: none;
+            margin: 0 20px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        #health-bars {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+        
+        .health-bar {
+            width: 200px;
+            height: 30px;
+            background-color: #333;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .health-fill {
+            height: 100%;
+            width: 100%;
+            transition: width 0.3s;
+        }
+        
+        #player-health .health-fill {
+            background-color: #4CAF50;
+        }
+        
+        #enemy-health .health-fill {
+            background-color: #f44336;
+        }
+        
+        .damage-text {
+            position: absolute;
+            color: red;
+            font-size: 24px;
+            font-weight: bold;
+            animation: floatUp 1s forwards;
+            z-index: 20;
+            text-shadow: 1px 1px 2px black;
+        }
+        
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+        
+        .punch-effect {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            animation: punchEffect 0.3s forwards;
+            z-index: 15;
+        }
+        
+        @keyframes punchEffect {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        #round-info {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px black;
+            z-index: 50;
+        }
+        
+        #round-result {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 48px;
+            text-shadow: 3px 3px 6px black;
+            z-index: 100;
+            display: none;
+        }
+        
+        #orientation-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            color: white;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 1000;
+            font-size: 24px;
+            padding: 20px;
+        }
+        
+        @media screen and (orientation:portrait) {
+            #orientation-warning { display: flex; }
+        }
+    </style>
+</head>
+<body style="background-image: url('bg.'); background-size: cover; background-repeat: no-repeat;">
+    <div id="orientation-warning">
+        Please rotate your device to landscape mode to play the game
+    </div>
+    <!-- Put this inside your <body> -->
+<audio id="bgMusic" src="Battle Circuit.mp3" loop></audio>
+
+<script>
+document.addEventListener("click", function() {
+    const music = document.getElementById("bgMusic");
+    music.play().catch(err => console.log(err));
+}, { once: true }); // Runs only the first time the page is clicked
+</script>
+    <div id="start-screen">
+        <h1 id="game-title">Fighting Champion</h1>
+        <div id="character-selection">
+            <div class="character-option" data-char="char1" style="background-image: url('char.png')"></div>
+            <div class="character-option" data-char="char2" style="background-image: url('en.png')"></div>
+            <div class="character-option" data-char="char3" style="background-image: url('char3.png')"></div>
+        </div>
+        <button id="start-button">START FIGHT</button>
+    </div>
+    
+    <div id="game-container">
+        <div id="round-info">Round 1</div>
+        <div id="round-result"></div>
+        
+        <div id="health-bars">
+            <div class="health-bar" id="player-health">
+                <div class="health-fill"></div>
+            </div>
+            <div class="health-bar" id="enemy-health">
+                <div class="health-fill"></div>
+            </div>
+        </div>
+        
+        <div id="player"></div>
+        <div id="enemy"></div>
+        
+        <div id="controls">
+            <div class="move-btn" id="left-btn">←</div>
+            <div id="punch-btn">PUNCH</div>
+            <div class="move-btn" id="right-btn">→</div>
+        </div>
+    </div>
+
+    <script>
+        // Game elements
+        const player = document.getElementById('player');
+        const enemy = document.getElementById('enemy');
+        const gameContainer = document.getElementById('game-container');
+        const startScreen = document.getElementById('start-screen');
+        const startButton = document.getElementById('start-button');
+        const characterOptions = document.querySelectorAll('.character-option');
+        const roundInfo = document.getElementById('round-info');
+        const roundResult = document.getElementById('round-result');
+        
+        // Game state
+        let playerX = 200;
+        let enemyX = gameContainer.offsetWidth - 350;
+        let playerHP = 100;
+        let enemyHP = 100;
+        let isPunching = false;
+        let enemyMoving = false;
+        let enemyDirection = 1;
+        let enemyAttackCooldown = 0;
+        let currentRound = 1;
+        let playerWins = 0;
+        let enemyWins = 0;
+        let selectedCharacter = 'char1';
+        let isBossRound = false;
+        
+        // Character data
+        const characters = {
+            char1: {
+                stand: 'char.png',
+                punch: 'punch.png'
+            },
+            char2: {
+                stand: 'en.png',
+                punch: 'en punch.png'
+            },
+            char3: {
+                stand: 'char3.png',
+                punch: 'char3_punch.png'
+            }
+        };
+        
+        const enemies = [
+            { stand: 'en.png', punch: 'en punch.png', hp: 100, damage: [5, 15], speed: 2 },
+            { stand: 'en.png', punch: 'en punch.png', hp: 120, damage: [7, 18], speed: 2.5 },
+            { stand: 'en.png', punch: 'en punch.png', hp: 200, damage: [10, 25], speed: 3 }
+        ];
+        
+        let currentEnemy = 0;
+        
+        // Initialize game
+        setupCharacterSelection();
+        setupControls();
+        
+        function setupCharacterSelection() {
+            characterOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    characterOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedCharacter = this.dataset.char;
+                });
+            });
+            
+            // Select first character by default
+            characterOptions[0].classList.add('selected');
+            
+            startButton.addEventListener('click', startGame);
+        }
+        
+        function startGame() {
+            startScreen.style.display = 'none';
+            gameContainer.style.display = 'block';
+            resetGame();
+        }
+        
+        function setupControls() {
+            document.getElementById('punch-btn').addEventListener('click', playerPunch);
+            document.getElementById('left-btn').addEventListener('click', () => movePlayer(-50));
+            document.getElementById('right-btn').addEventListener('click', () => movePlayer(50));
+            
+            // Touch controls
+            document.getElementById('punch-btn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                playerPunch();
+            });
+            document.getElementById('left-btn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                movePlayer(-50);
+            });
+            document.getElementById('right-btn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                movePlayer(50);
+            });
+            
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') movePlayer(-50);
+                if (e.key === 'ArrowRight') movePlayer(50);
+                if (e.key === ' ' || e.key === 'p') playerPunch();
+            });
+        }
+        
+        function gameLoop() {
+            // Update enemy position
+            enemyX = Math.min(enemyX, gameContainer.offsetWidth - 250);
+            
+            // Enemy AI movement
+            if (!enemyMoving && Math.random() < 0.01) {
+                enemyMoving = true;
+                enemyDirection = Math.random() < 0.5 ? -1 : 1;
+            }
+            
+            if (enemyMoving) {
+                enemyX += enemyDirection * enemies[currentEnemy].speed;
+                
+                // Boundary checks - no middle boundary
+                if (enemyX < 50) {
+                    enemyX = 50;
+                    enemyDirection = 1;
+                } else if (enemyX > gameContainer.offsetWidth - 250) {
+                    enemyX = gameContainer.offsetWidth - 250;
+                    enemyDirection = -1;
+                }
+                
+                // Random stop
+                if (Math.random() < 0.02) enemyMoving = false;
+                
+                // Random attack
+                if (Math.random() < 0.01 && enemyAttackCooldown <= 0) {
+                    enemyAttack();
+                }
+                
+                enemy.style.right = (gameContainer.offsetWidth - enemyX - 150) + 'px';
+            }
+            
+            // Cooldown
+            if (enemyAttackCooldown > 0) enemyAttackCooldown--;
+            
+            // Attack if close
+            if (Math.abs(playerX - enemyX) < 150 && enemyAttackCooldown <= 0 && Math.random() < 0.005) {
+                enemyAttack();
+            }
+        }
+        
+        function movePlayer(amount) {
+            playerX += amount;
+            
+            // Boundary checks - no middle boundary
+            if (playerX < 50) playerX = 50;
+            if (playerX > gameContainer.offsetWidth - 250) playerX = gameContainer.offsetWidth - 250;
+            
+            player.style.left = playerX + 'px';
+            
+            // Movement animation
+            player.style.transform = `translateX(${amount > 0 ? 5 : -5}px)`;
+            setTimeout(() => player.style.transform = 'translateX(0)', 100);
+        }
+        
+        function playerPunch() {
+            if (isPunching) return;
+            isPunching = true;
+            
+            // Change to punch pose
+            player.style.backgroundImage = `url('${characters[selectedCharacter].punch}')`;
+            player.style.transform = 'translateY(-10px)';
+            
+            // Check hit
+            if (Math.abs(playerX - enemyX) < 200) {
+                const damage = 10 + Math.floor(Math.random() * 15);
+                enemyHP = Math.max(0, enemyHP - damage);
+                updateHealthBars();
+                
+                showDamage(enemyX + 75, gameContainer.offsetHeight - 100, damage);
+                enemyHitAnimation();
+                
+                if (enemyHP <= 0) {
+                    playerWins++;
+                    showRoundResult("YOU WON!");
+                    setTimeout(() => nextRound(), 2000);
+                }
+            }
+            
+            // Return to standing pose
+            setTimeout(() => {
+                player.style.backgroundImage = `url('${characters[selectedCharacter].stand}')`;
+                player.style.transform = 'translateY(0)';
+                setTimeout(() => isPunching = false, 200);
+            }, 300);
+        }
+        
+        function enemyAttack() {
+            enemyAttackCooldown = 60;
+            
+            // Attack animation
+            enemy.style.backgroundImage = `url('${enemies[currentEnemy].punch}')`;
+            enemy.style.transform = 'translateY(-10px)';
+            
+            // Check hit
+            if (Math.abs(playerX - enemyX) < 200) {
+                const minDmg = enemies[currentEnemy].damage[0];
+                const maxDmg = enemies[currentEnemy].damage[1];
+                const damage = minDmg + Math.floor(Math.random() * (maxDmg - minDmg));
+                playerHP = Math.max(0, playerHP - damage);
+                updateHealthBars();
+                
+                showDamage(playerX + 75, gameContainer.offsetHeight - 100, damage);
+                playerHitAnimation();
+                
+                if (playerHP <= 0) {
+                    enemyWins++;
+                    showRoundResult("YOU LOST!");
+                    setTimeout(() => nextRound(), 2000);
+                }
+            }
+            
+            // Return to standing pose
+            setTimeout(() => {
+                enemy.style.backgroundImage = `url('${enemies[currentEnemy].stand}')`;
+                enemy.style.transform = 'translateY(0)';
+            }, 300);
+        }
+        
+        function showDamage(x, y, amount) {
+            const damageText = document.createElement('div');
+            damageText.className = 'damage-text';
+            damageText.textContent = '-' + amount;
+            damageText.style.left = x + 'px';
+            damageText.style.top = y + 'px';
+            gameContainer.appendChild(damageText);
+            setTimeout(() => {
+                if (damageText.parentNode) damageText.parentNode.removeChild(damageText);
+            }, 1000);
+        }
+        
+        function playerHitAnimation() {
+            player.style.transform = 'translateX(-20px)';
+            setTimeout(() => player.style.transform = 'translateX(0)', 200);
+        }
+        
+        function enemyHitAnimation() {
+            enemy.style.transform = 'translateX(20px)';
+            setTimeout(() => enemy.style.transform = 'translateX(0)', 200);
+        }
+        
+        function updateHealthBars() {
+            document.querySelector('#player-health .health-fill').style.width = playerHP + '%';
+            document.querySelector('#enemy-health .health-fill').style.width = enemyHP + '%';
+        }
+        
+        function showRoundResult(result) {
+            roundResult.textContent = result;
+            roundResult.style.display = 'block';
+            setTimeout(() => roundResult.style.display = 'none', 1500);
+        }
+        
+        function nextRound() {
+            currentRound++;
+            
+            if (playerWins >= 2) {
+                // Player won the match
+                alert("You won the match!");
+                resetMatch();
+                return;
+            } else if (enemyWins >= 2) {
+                // Enemy won the match
+                alert("You lost the match!");
+                resetMatch();
+                return;
+            }
+            
+            // Move to next enemy (boss on final round)
+            if (currentRound === 3) {
+                currentEnemy = 2; // Boss enemy
+                isBossRound = true;
+            } else {
+                currentEnemy = 1; // Stronger regular enemy
+                isBossRound = false;
+            }
+            
+            roundInfo.textContent = `Round ${currentRound}`;
+            resetGame();
+        }
+        
+        function resetMatch() {
+            currentRound = 1;
+            playerWins = 0;
+            enemyWins = 0;
+            currentEnemy = 0;
+            isBossRound = false;
+            roundInfo.textContent = `Round ${currentRound}`;
+            resetGame();
+        }
+        
+        function resetGame() {
+            playerX = 200;
+            enemyX = gameContainer.offsetWidth - 350;
+            playerHP = 100;
+            enemyHP = enemies[currentEnemy].hp;
+            player.style.left = playerX + 'px';
+            player.style.backgroundImage = `url('${characters[selectedCharacter].stand}')`;
+            enemy.style.right = (gameContainer.offsetWidth - enemyX - 150) + 'px';
+            enemy.style.backgroundImage = `url('${enemies[currentEnemy].stand}')`;
+            updateHealthBars();
+        }
+        
+        window.addEventListener('resize', () => {
+            enemyX = Math.min(enemyX, gameContainer.offsetWidth - 250);
+            playerX = Math.min(playerX, gameContainer.offsetWidth - 250);
+            player.style.left = playerX + 'px';
+            enemy.style.right = (gameContainer.offsetWidth - enemyX - 150) + 'px';
+        });
+        
+        // Start game loop
+        setInterval(gameLoop, 1000/60);
+    </script>
+</body>
+</html>
